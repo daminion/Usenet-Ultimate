@@ -15,7 +15,7 @@ import type { NZBSearchResult } from '../types.js';
 import { DEFAULT_INDEXER_TIMEOUT_SECONDS } from '../types.js';
 import { config } from '../config/index.js';
 import { getLatestVersions } from '../versionFetcher.js';
-import { isTextSearchMatch, stripDiacritics, tagSeasonPack, runSeriesPackQueries, getSeriesPackAdditionalPages, getSeasonPackAdditionalPages, extractSeasonTokens, normalizeTitle, extractTitleFromRelease } from '../parsers/titleMatching.js';
+import { isTextSearchMatch, stripDiacritics, tagSeasonPack, runSeriesPackQueries, getSeriesPackAdditionalPages, getSeasonPackAdditionalPages, extractSeasonTokens, normalizeTitle, extractTitleFromRelease, isEpisodeMatch } from '../parsers/titleMatching.js';
 import { slog, withSubBuffer } from '../parsers/searchLogger.js';
 
 const EASYNEWS_SEARCH_URL = 'https://members.easynews.com/2.0/search/solr-search/';
@@ -209,7 +209,7 @@ export class EasynewsSearcher {
       tasks.push(withSubBuffer(`TV text search [EasyNews] "${epQuery}"`, async () => {
         slog(`🔍 [EasyNews] Query ${this.timeoutLabel()}: "${epQuery}"`);
         const r = await this.search(epQuery);
-        const f = r.filter(x => isTextSearchMatch(t, x.title, year, country, parallelAltEnabled ? undefined : additionalTitles, titleYear));
+        const f = r.filter(x => isTextSearchMatch(t, x.title, year, country, parallelAltEnabled ? undefined : additionalTitles, titleYear) && isEpisodeMatch(x.title, season, episode));
         if (r.length !== f.length) {
           const kept = new Set(f);
           const removed = r.filter(x => !kept.has(x));
