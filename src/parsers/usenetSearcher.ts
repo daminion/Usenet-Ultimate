@@ -12,7 +12,7 @@ import { config } from '../config/index.js';
 import { getLatestVersions } from '../versionFetcher.js';
 import { getAxiosProxyConfig, probeSearchExitIp } from '../proxy.js';
 import { parseNewznabXmlWithMeta } from './newznabClient.js';
-import { stripDiacritics, isTextSearchMatch, tagSeasonPack, normalizeTitle, extractTitleFromRelease, runSeriesPackQueries, buildSeriesPackPaginationMaxPages, buildSeasonPackPaginationMaxPages, extractSeasonTokens } from './titleMatching.js';
+import { stripDiacritics, isTextSearchMatch, tagSeasonPack, normalizeTitle, extractTitleFromRelease, runSeriesPackQueries, buildSeriesPackPaginationMaxPages, buildSeasonPackPaginationMaxPages, extractSeasonTokens, isEpisodeMatch } from './titleMatching.js';
 import { slog, withSubBuffer } from './searchLogger.js';
 
 // Return the proxy exit IP only when pre- and post-request probes agree.
@@ -464,7 +464,8 @@ export class UsenetSearcher {
             };
             const matches = (r: NZBSearchResult) =>
               isTextSearchMatch(title, matchTitle(r.title), year, country, additionalTitles, titleYear)
-              && seasonOk(r.title);
+              && seasonOk(r.title)
+              && isEpisodeMatch(r.title, season, episode);
             filtered = results.filter(matches);
             removed = results.filter(r => !matches(r));
             if (before !== filtered.length) {
@@ -653,6 +654,14 @@ export class UsenetSearcher {
             slog(`   ⚠️  Pagination page ${page} failed: ${pageError.message}`);
             break;
           }
+        }
+      }
+
+      if (title) {
+        const beforeIdFilter = results.length;
+        results = results.filter(r => isEpisodeMatch(r.title, season, episode));
+        if (beforeIdFilter !== results.length) {
+        slog(`   🎯 [${this.indexer.name}] Episode filter: ${beforeIdFilter} → ${results.length} (removed ${beforeIdFilter - results.length} mismatches)`);
         }
       }
 

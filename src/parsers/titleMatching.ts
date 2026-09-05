@@ -6,6 +6,7 @@
  */
 
 import { parseYear } from './metadataParsers.js';
+import { parseTorrentTitle } from '@viren070/parse-torrent-title';
 import type { NZBSearchResult, SearchConfig } from '../types.js';
 import { slog } from './searchLogger.js';
 
@@ -364,6 +365,14 @@ export function extractSeasonTokens(text: string): number[] {
     out.push(parseInt(m[1], 10));
   }
   return out;
+}
+
+export function isEpisodeMatch(releaseTitle: string, season: number, episode: number): boolean {
+  const parsed = parseTorrentTitle(releaseTitle);
+  const seasons = parsed.seasons ?? [];
+  const episodes = parsed.episodes ?? [];
+  if (seasons.length === 0 && episodes.length === 0) return true;
+  return seasons.includes(season) && episodes.includes(episode);
 }
 
 /**
